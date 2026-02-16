@@ -25,7 +25,7 @@ public class ProductEntity {
 
     @NotNull(message = "{}")
     @DecimalMin(value = "0.01", message = "{}")
-    private Long price;
+    private Float price;
 
     @Min(value = 0, message = "{}")
     private Integer stock;
