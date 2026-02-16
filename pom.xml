@@ -8,7 +8,6 @@
 		<version>3.5.10</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.ms-products</groupId>
 	<artifactId>ms-products</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>ms-products</name>
