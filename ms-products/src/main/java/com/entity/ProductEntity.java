@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class entity {
+public class ProductEntity {
 
     @Null(message = "{}")
     private Long id;
