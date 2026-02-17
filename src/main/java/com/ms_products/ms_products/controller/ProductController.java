@@ -1,66 +1,48 @@
 package com.ms_products.ms_products.controller;
 
-
-import com.ma_products.ms_products.dto.request.ProductoRequestDTO;
-import com.ma_products.ms_products.dto.response.ProductoResponseDTO;
-import com.ma_products.ms_products.service.ProductoService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import com.ms_products.ms_products.entity.ProductEntity;
+import com.ms_products.ms_products.service.ProductService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/productos")
-@CrossOrigin(origins = "*")
-@Tag(name = "Productos", description = "Controlador para la gestión del catálogo de productos")
+@RequestMapping("/api/products")
+@RequiredArgsConstructor
 public class ProductController {
 
-    @Autowired
-    private ProductoService productoService;
+    private final ProductService productService;
 
-    @Operation(summary = "Obtener productos")
-    @GetMapping
-    public ResponseEntity<List<ProductoResponseDTO>> obtenerTodos() {
-        return ResponseEntity.ok(productoService.listarTodos());
-    }
-
-    @Operation(summary = "Obtener producto por ID")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Producto encontrado"),
-            @ApiResponse(responseCode = "404", description = "Producto no encontrado")
-    })
-    @GetMapping("/{id}")
-    public ResponseEntity<ProductoResponseDTO> obtenerPorId(@PathVariable Long id) {
-        return ResponseEntity.ok(productoService.buscarPorId(id));
-    }
-
-    @Operation(summary = "Agregar nuevo producto")
+    // AGREGAR
     @PostMapping
-    public ResponseEntity<ProductoResponseDTO> crear(@Valid @RequestBody ProductoRequestDTO request) {
-        ProductoResponseDTO nuevoProducto = productoService.guardar(request);
-        return new ResponseEntity<>(nuevoProducto, HttpStatus.CREATED);
+    public ProductEntity agregar(@Valid @RequestBody ProductEntity product) {
+        return productService.agregar(product);
     }
 
-    @Operation(summary = "Actualizar un producto ")
+    // MODIFICAR
     @PutMapping("/{id}")
-    public ResponseEntity<ProductoResponseDTO> actualizar(
-            @PathVariable Long id,
-            @Valid @RequestBody ProductoRequestDTO request) {
-        return ResponseEntity.ok(productoService.actualizar(id, request));
+    public ProductEntity modificar(@PathVariable Long id,
+                                   @Valid @RequestBody ProductEntity product) {
+        return productService.modificar(id, product);
     }
 
-    @Operation(summary = "Eliminar un producto")
+    // ELIMINAR
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
-        productoService.eliminar(id);
-        return ResponseEntity.noContent().build();
+    public void eliminar(@PathVariable Long id) {
+        productService.eliminar(id);
+    }
+
+    // CONSULTAR POR ID
+    @GetMapping("/{id}")
+    public ProductEntity obtenerPorId(@PathVariable Long id) {
+        return productService.obtenerPorId(id);
+    }
+
+    // LISTAR TODOS
+    @GetMapping
+    public List<ProductEntity> listar() {
+        return productService.listar();
     }
 }
-
