@@ -13,6 +13,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Entity
+@Table(name = "products") // nombre de la tabla en MySQL
 public class ProductEntity {
 
     @Id
@@ -30,11 +32,10 @@ public class ProductEntity {
 
     @NotNull(message = "{}")
     @DecimalMin(value = "0.01", message = "{}")
-    private Float price;
+    private Double price;
 
     @Min(value = 0, message = "{}")
     private Integer stock;
-
 
     @NotBlank(message = "{}")
     @Size(min = 3, max = 50, message = "{}")
