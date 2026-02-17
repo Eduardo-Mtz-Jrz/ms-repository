@@ -13,12 +13,13 @@ class ProductEntityTest {
 
     private ProductEntity productEntity;
 
+
     @ParameterizedTest
     @ValueSource(strings = {"1","a"})
     void idTestValid(String values){
-       // assertThrows(IllegalStateException.class, () -> {
+        assertDoesNotThrow(() -> {
             this.productEntity.setId(Long.valueOf(values));
-     //   });
+        });
     }
 
 }
