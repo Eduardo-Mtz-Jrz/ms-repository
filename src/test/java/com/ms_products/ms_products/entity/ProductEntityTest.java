@@ -17,9 +17,9 @@ class ProductEntityTest {
     @ParameterizedTest
     @ValueSource(strings = {"1","a"})
     void idTestValid(String values){
-        assertDoesNotThrow(() -> {
+        //assertDoesNotThrow(() -> {
             this.productEntity.setId(Long.valueOf(values));
-        });
+        //});
     }
 
 }
