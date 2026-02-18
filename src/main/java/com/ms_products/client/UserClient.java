@@ -1,4 +1,4 @@
-package com.ms_products.ms_products.client;
+package com.ms_products.client;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;

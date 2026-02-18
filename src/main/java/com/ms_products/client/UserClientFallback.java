@@ -1,4 +1,4 @@
-package com.ms_products.ms_products.client;
+package com.ms_products.client;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

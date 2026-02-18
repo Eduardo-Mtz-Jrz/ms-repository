@@ -1,4 +1,4 @@
-package com.ms_products.ms_products.entity;
+package com.ms_products.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
