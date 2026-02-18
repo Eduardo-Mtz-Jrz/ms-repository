@@ -1,102 +1,83 @@
 package com.ms_products.ms_products.service;
 
-import com.ms_products.ms_products.client.UserClient; // <--- Importamos el cliente
+import com.ms_products.ms_products.client.UserClient;
 import com.ms_products.ms_products.dto.ProductRequestDTO;
 import com.ms_products.ms_products.dto.ProductResponseDTO;
 import com.ms_products.ms_products.entity.ProductEntity;
+import com.ms_products.ms_products.exception.ProductNotFoundException;
+import com.ms_products.ms_products.exception.UnauthorizedException;
+import com.ms_products.ms_products.mapper.ProductMapper;
 import com.ms_products.ms_products.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository productRepository;
-    private final UserClient userClient; // <--- Inyección del cliente Feign
+    private final UserClient userClient;
+    private final ProductMapper productMapper;
 
-    // CREATE
     @Override
+    @Transactional
     public ProductResponseDTO save(ProductRequestDTO request) {
-        productRepository.findByCode(request.getCode())
-                .ifPresent(p -> {
-                    throw new RuntimeException("Product code already exists");
-                });
+        log.info("Attempting to save product: {}", request.getCode());
 
-        ProductEntity product = mapToEntity(request);
-        return mapToDTO(productRepository.save(product));
+        if (productRepository.findByCode(request.getCode()).isPresent()) {
+            log.error("Save failed: Code {} exists", request.getCode());
+            throw new IllegalStateException("Product code already exists");
+        }
+
+        ProductEntity product = productMapper.toEntity(request);
+        return productMapper.toDto(productRepository.save(product));
     }
 
-    // UPDATE - Aquí aplicamos la validación del Laboratorio
     @Override
-    public ProductResponseDTO update(Long id, ProductRequestDTO request, Long userId) { // <-- Agregamos userId
+    @Transactional
+    public ProductResponseDTO update(Long id, ProductRequestDTO request, Long userId) {
+        log.info("Update requested for ID: {} by user: {}", id, userId);
 
-        // 1. Llamada a MS USUARIOS vía Feign
-        Boolean isAdmin = userClient.isAdmin(userId);
-
-        // 2. Validación de respuesta booleana
-        if (isAdmin == null || !isAdmin) {
-            throw new RuntimeException("Acceso denegado: Se requieren permisos de ADMIN para modificar productos.");
+        if (!Boolean.TRUE.equals(userClient.isAdmin(userId))) {
+            log.warn("Access denied for user {}", userId);
+            throw new UnauthorizedException("User does not have admin privileges");
         }
 
         ProductEntity existingProduct = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
+                .orElseThrow(() -> new ProductNotFoundException(id));
 
-        existingProduct.setName(request.getName());
-        existingProduct.setCode(request.getCode());
-        existingProduct.setPrice(request.getPrice());
-        existingProduct.setStock(request.getStock());
-        existingProduct.setCategory(request.getCategory());
-
-        return mapToDTO(productRepository.save(existingProduct));
+        productMapper.updateEntityFromDto(request, existingProduct);
+        return productMapper.toDto(productRepository.save(existingProduct));
     }
 
-    // ... (Los demás métodos DELETE, findById y findAll se quedan igual)
-
     @Override
+    @Transactional
     public void delete(Long id) {
-        ProductEntity product = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
-        productRepository.delete(product);
+        log.info("Attempting to delete ID: {}", id);
+        if (!productRepository.existsById(id)) {
+            throw new ProductNotFoundException(id);
+        }
+        productRepository.deleteById(id);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ProductResponseDTO findById(Long id) {
-        ProductEntity product = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
-        return mapToDTO(product);
+        return productRepository.findById(id)
+                .map(productMapper::toDto)
+                .orElseThrow(() -> new ProductNotFoundException(id));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ProductResponseDTO> findAll() {
-        return productRepository.findAll()
-                .stream()
-                .map(this::mapToDTO)
-                .collect(Collectors.toList());
-    }
-
-    // MAPPERS
-    private ProductEntity mapToEntity(ProductRequestDTO dto) {
-        ProductEntity product = new ProductEntity();
-        product.setName(dto.getName());
-        product.setCode(dto.getCode());
-        product.setPrice(dto.getPrice());
-        product.setStock(dto.getStock());
-        product.setCategory(dto.getCategory());
-        return product;
-    }
-
-    private ProductResponseDTO mapToDTO(ProductEntity entity) {
-        ProductResponseDTO dto = new ProductResponseDTO();
-        dto.setId(entity.getId());
-        dto.setName(entity.getName());
-        dto.setCode(entity.getCode());
-        dto.setPrice(entity.getPrice());
-        dto.setStock(entity.getStock());
-        dto.setCategory(entity.getCategory());
-        return dto;
+        return productRepository.findAll().stream()
+                .map(productMapper::toDto)
+                .toList();
     }
 }
