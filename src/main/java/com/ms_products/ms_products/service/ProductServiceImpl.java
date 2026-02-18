@@ -36,8 +36,8 @@ public class ProductServiceImpl implements ProductService {
 
         // 1. Llamada a MS USUARIOS vía Feigg
         //IMPORTANTE: cambiar variable para pruebas locales.
-        //Boolean isAdmin = userClient.isAdmin(userId);
-        Boolean isAdmin = false;
+        Boolean isAdmin = userClient.isAdmin(userId);
+        //Boolean isAdmin = false;
 
         // 2. Validación de respuesta booleana
         if (isAdmin == null || !isAdmin) {
