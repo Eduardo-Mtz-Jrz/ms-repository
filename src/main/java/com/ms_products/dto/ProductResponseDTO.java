@@ -1,4 +1,4 @@
-package com.ms_products.ms_products.dto;
+package com.ms_products.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

@@ -1,8 +1,8 @@
-package com.ms_products.ms_products.mapper;
+package com.ms_products.mapper;
 
-import com.ms_products.ms_products.dto.ProductRequestDTO;
-import com.ms_products.ms_products.dto.ProductResponseDTO;
-import com.ms_products.ms_products.entity.ProductEntity;
+import com.ms_products.dto.ProductRequestDTO;
+import com.ms_products.dto.ProductResponseDTO;
+import com.ms_products.entity.ProductEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
