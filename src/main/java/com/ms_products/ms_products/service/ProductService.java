@@ -1,23 +1,29 @@
 package com.ms_products.ms_products.service;
 
-import com.ms_products.ms_products.entity.ProductEntity;
+import com.ms_products.ms_products.dto.ProductRequestDTO;
+import com.ms_products.ms_products.dto.ProductResponseDTO;
 
 import java.util.List;
 
+/**
+ * Service interface for managing product business logic.
+ */
 public interface ProductService {
 
-    // ADD PRODUCT
-    ProductEntity productAdd(ProductEntity product);
+    ProductResponseDTO save(ProductRequestDTO request);
 
-    // UPDATE PRODUCT
-    ProductEntity productUpdate(Long id, ProductEntity product);
+    /**
+     * Updates an existing product.
+     * * @param id Product identifier
+     * @param request Data to update
+     * @param userId ID of the user performing the update (for admin validation)
+     * @return The updated product DTO
+     */
+    ProductResponseDTO update(Long id, ProductRequestDTO request, Long userId);
 
-    // DELETE PRODUCT
-    void productDelete(Long id);
+    void delete(Long id);
 
-    // GET PRODUCT BY ID
-    ProductEntity productGetById(Long id);
+    ProductResponseDTO findById(Long id);
 
-    // GET ALL PRODUCTS
-    List<ProductEntity> productGetAll();
+    List<ProductResponseDTO> findAll();
 }
