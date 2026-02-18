@@ -1,12 +1,12 @@
 package com.ms_products.service;
 
-import com.ms_products.ms_products.client.UserClient;
-import com.ms_products.ms_products.dto.ProductRequestDTO;
-import com.ms_products.ms_products.dto.ProductResponseDTO;
-import com.ms_products.ms_products.entity.ProductEntity;
-import com.ms_products.ms_products.exception.ProductNotFoundException;
-import com.ms_products.ms_products.exception.UnauthorizedException;
-import com.ms_products.ms_products.mapper.ProductMapper;
+import com.ms_products.client.UserClient;
+import com.ms_products.dto.ProductRequestDTO;
+import com.ms_products.dto.ProductResponseDTO;
+import com.ms_products.entity.ProductEntity;
+import com.ms_products.exception.ProductNotFoundException;
+import com.ms_products.exception.UnauthorizedException;
+import com.ms_products.mapper.ProductMapper;
 import com.ms_products.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +15,18 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Implementation of the {@link ProductService} providing business
+ * logic for product management.
+ * <p>
+ * This service handles CRUD operations, integrates with external
+ * user validation services,
+ * and manages data persistence through {@link ProductRepository}.
+ * </p>
+ *
+ * @author YourName
+ * @version 1.0
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -24,6 +36,16 @@ public class ProductServiceImpl implements com.ms_products.service.ProductServic
     private final UserClient userClient;
     private final ProductMapper productMapper;
 
+    /**
+     * Creates and persists a new product in the database.
+     *
+     * @param request Data transfer object containing the product
+     *                details to be saved.
+     * @return {@link ProductResponseDTO} representing the newly
+     * created product.
+     * @throws IllegalStateException if a product with the same code
+     * already exists.
+     */
     @Override
     @Transactional
     public ProductResponseDTO save(ProductRequestDTO request) {
@@ -38,11 +60,26 @@ public class ProductServiceImpl implements com.ms_products.service.ProductServic
         return productMapper.toDto(productRepository.save(product));
     }
 
+    /**
+     * Updates an existing product after verifying administrative
+     * privileges.
+     *
+     * @param id The unique identifier of the product to update.
+     * @param request Updated product data.
+     * @param userId ID of the user performing the update for
+     *              authorization check.
+     * @return The updated {@link ProductResponseDTO}.
+     * @throws UnauthorizedException if the user does not have
+     * administrative rights.
+     * @throws ProductNotFoundException if no product is found
+     * with the provided ID.
+     */
     @Override
     @Transactional
     public ProductResponseDTO update(Long id, ProductRequestDTO request, Long userId) {
         log.info("Update requested for ID: {} by user: {}", id, userId);
 
+        // Security check via UserClient (External Microservice)
         if (!Boolean.TRUE.equals(userClient.isAdmin(userId))) {
             log.warn("Access denied for user {}", userId);
             throw new UnauthorizedException("User does not have admin privileges");
@@ -55,6 +92,12 @@ public class ProductServiceImpl implements com.ms_products.service.ProductServic
         return productMapper.toDto(productRepository.save(existingProduct));
     }
 
+    /**
+     * Deletes a product from the system by its ID.
+     *
+     * @param id The unique identifier of the product to be deleted.
+     * @throws ProductNotFoundException if the product does not exist.
+     */
     @Override
     @Transactional
     public void delete(Long id) {
@@ -65,6 +108,13 @@ public class ProductServiceImpl implements com.ms_products.service.ProductServic
         productRepository.deleteById(id);
     }
 
+    /**
+     * Retrieves a specific product by its unique identifier.
+     *
+     * @param id The ID of the product to find.
+     * @return The found {@link ProductResponseDTO}.
+     * @throws ProductNotFoundException if the ID is not present in the database.
+     */
     @Override
     @Transactional(readOnly = true)
     public ProductResponseDTO findById(Long id) {
@@ -73,6 +123,11 @@ public class ProductServiceImpl implements com.ms_products.service.ProductServic
                 .orElseThrow(() -> new ProductNotFoundException(id));
     }
 
+    /**
+     * Retrieves all products currently stored in the system.
+     *
+     * @return A {@link List} of all products as DTOs.
+     */
     @Override
     @Transactional(readOnly = true)
     public List<ProductResponseDTO> findAll() {
