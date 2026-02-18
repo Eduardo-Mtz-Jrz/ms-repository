@@ -1,13 +1,13 @@
-package com.ms_products.ms_products.service;
+package com.ms_products.service;
 
-import com.ms_products.ms_products.client.UserClient;
-import com.ms_products.ms_products.dto.ProductRequestDTO;
-import com.ms_products.ms_products.dto.ProductResponseDTO;
-import com.ms_products.ms_products.entity.ProductEntity;
-import com.ms_products.ms_products.exception.ProductNotFoundException;
-import com.ms_products.ms_products.exception.UnauthorizedException;
-import com.ms_products.ms_products.mapper.ProductMapper;
-import com.ms_products.ms_products.repository.ProductRepository;
+import com.ms_products.client.UserClient;
+import com.ms_products.dto.ProductRequestDTO;
+import com.ms_products.dto.ProductResponseDTO;
+import com.ms_products.entity.ProductEntity;
+import com.ms_products.exception.ProductNotFoundException;
+import com.ms_products.exception.UnauthorizedException;
+import com.ms_products.mapper.ProductMapper;
+import com.ms_products.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
