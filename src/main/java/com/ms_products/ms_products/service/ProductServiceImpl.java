@@ -27,48 +27,39 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public ProductResponseDTO save(ProductRequestDTO request) {
-        log.info("Attempting to save product with code: {}", request.getCode());
+        log.info("Attempting to save product: {}", request.getCode());
 
-        productRepository.findByCode(request.getCode())
-                .ifPresent(p -> {
-                    log.error("Save failed: Code {} already exists", request.getCode());
-                    throw new IllegalStateException("Product code already exists");
-                });
+        if (productRepository.findByCode(request.getCode()).isPresent()) {
+            log.error("Save failed: Code {} exists", request.getCode());
+            throw new IllegalStateException("Product code already exists");
+        }
 
         ProductEntity product = productMapper.toEntity(request);
-        ProductEntity savedProduct = productRepository.save(product);
-
-        return productMapper.toDto(savedProduct);
+        return productMapper.toDto(productRepository.save(product));
     }
 
     @Override
     @Transactional
     public ProductResponseDTO update(Long id, ProductRequestDTO request, Long userId) {
-        log.info("Update requested for product ID: {} by user ID: {}", id, userId);
+        log.info("Update requested for ID: {} by user: {}", id, userId);
 
-        // Validación de seguridad: Boolean.TRUE.equals es la forma más segura contra nulls
         if (!Boolean.TRUE.equals(userClient.isAdmin(userId))) {
-            log.warn("Access denied for user {}: Not an admin", userId);
+            log.warn("Access denied for user {}", userId);
             throw new UnauthorizedException("User does not have admin privileges");
         }
 
-        return productRepository.findById(id)
-                .map(existingProduct -> {
-                    // Usamos el mapper para actualizar los campos automáticamente
-                    productMapper.updateEntityFromDto(request, existingProduct);
-                    ProductEntity updatedProduct = productRepository.save(existingProduct);
-                    log.info("Product ID: {} updated successfully", id);
-                    return productMapper.toDto(updatedProduct);
-                })
+        ProductEntity existingProduct = productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException(id));
+
+        productMapper.updateEntityFromDto(request, existingProduct);
+        return productMapper.toDto(productRepository.save(existingProduct));
     }
 
     @Override
     @Transactional
     public void delete(Long id) {
-        log.info("Attempting to delete product ID: {}", id);
+        log.info("Attempting to delete ID: {}", id);
         if (!productRepository.existsById(id)) {
-            log.error("Delete failed: Product ID {} not found", id);
             throw new ProductNotFoundException(id);
         }
         productRepository.deleteById(id);
@@ -85,8 +76,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional(readOnly = true)
     public List<ProductResponseDTO> findAll() {
-        return productRepository.findAll()
-                .stream()
+        return productRepository.findAll().stream()
                 .map(productMapper::toDto)
                 .toList();
     }
