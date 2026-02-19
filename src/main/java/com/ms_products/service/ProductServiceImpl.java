@@ -1,6 +1,7 @@
 package com.ms_products.service;
 
 import com.ms_products.client.UserClient;
+import com.ms_products.dto.IdempotenteRequestDTO;
 import com.ms_products.dto.ProductRequestDTO;
 import com.ms_products.dto.ProductResponseDTO;
 import com.ms_products.entity.ProductEntity;
@@ -47,6 +48,11 @@ public class ProductServiceImpl implements ProductService {
 
         ProductEntity entity = productMapper.toEntity(request);
         return productMapper.toDto(productRepository.save(entity));
+    }
+
+    @Override
+    public Boolean registerOrder(IdempotenteRequestDTO idempotenteRequestDTO) {
+        return null;
     }
 
     @Override

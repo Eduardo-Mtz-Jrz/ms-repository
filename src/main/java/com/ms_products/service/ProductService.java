@@ -1,5 +1,6 @@
 package com.ms_products.service;
 
+import com.ms_products.dto.IdempotenteRequestDTO;
 import com.ms_products.dto.ProductRequestDTO;
 import com.ms_products.dto.ProductResponseDTO;
 
@@ -24,6 +25,8 @@ public interface ProductService {
      * @return {@link ProductResponseDTO} the newly created product.
      */
     ProductResponseDTO save(ProductRequestDTO request);
+
+    Boolean registerOrder(IdempotenteRequestDTO idempotenteRequestDTO);
 
     /**
      * Updates an existing product's information.

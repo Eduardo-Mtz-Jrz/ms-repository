@@ -2,6 +2,7 @@ package com.ms_products.controller;
 
 import com.ms_products.dto.ProductRequestDTO;
 import com.ms_products.dto.ProductResponseDTO;
+import com.ms_products.repository.IInventoryIdempotenteRepository;
 import com.ms_products.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -34,7 +35,12 @@ public class ProductController {
 
     private final ProductService productService;
 
-    public ResponseEntity<>
+    private final IInventoryIdempotenteRepository inventoryIdempotenteRepository;
+
+    @PostMapping("/")
+    public ResponseEntity<Boolean> registerOrder(@PathVariable(name = "id") Long id){
+        return ;
+    }
 
     @Operation(summary = "Retrieve all products", description = "Returns a complete list of products available in the system.")
     @ApiResponse(responseCode = "200", description = "Successfully retrieved product list")
