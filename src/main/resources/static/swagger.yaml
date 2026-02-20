@@ -1,16 +1,20 @@
 openapi: 3.0.1
 info:
   title: MS-PRODUCTS API
-  description: Microservice for managing the product catalog - Lab 2
-  version: 1.1.0
+  description: Microservice for managing the product catalog - Lab 3
+  version: 1.2.0
 
 servers:
-  - url: http://localhost:8080
+  - url: http://localhost:8081
     description: Local development server
 
 tags:
   - name: Products
     description: Operations related to product management
+  - name: Inventory
+    description: Operations for stock movements
+  - name: Inventory Idempotente
+    description: Operations for stock movements with idempotency
 
 paths:
   /api/products:
@@ -30,6 +34,7 @@ paths:
       tags: [Products]
       summary: Create a new product
       requestBody:
+        description: Product data to be created
         required: true
         content:
           application/json:
@@ -44,7 +49,8 @@ paths:
   /api/products/{id}:
     get:
       tags: [Products]
-      summary: Get product by ID
+      summary: Check if product exists by ID
+      description: Returns true if the product exists, false if it does not.
       parameters:
         - name: id
           in: path
@@ -54,14 +60,30 @@ paths:
             format: int64
       responses:
         '200':
-          description: Product found
+          description: Product exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exists:
+                    type: boolean
+                    example: true
         '404':
           description: Product not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exists:
+                    type: boolean
+                    example: false
 
     put:
       tags: [Products]
       summary: Update an existing product
-      description: Requires Admin privileges (validated via userId)
+      description: Requires Admin privileges (validated via X-User-Id header)
       parameters:
         - name: id
           in: path
@@ -69,8 +91,8 @@ paths:
           schema:
             type: integer
             format: int64
-        - name: userId
-          in: query
+        - name: X-User-Id
+          in: header
           required: true
           description: ID of the user performing the update
           schema:
@@ -103,20 +125,19 @@ paths:
       responses:
         '204':
           description: Product deleted successfully
-        '404':
-          description: Product not found
 
-  /api/products/low-stock:
+  /api/v1/product/inventory/low-stock:
     get:
-      tags: [Products]
-      summary: Get products with stock below threshold
+      tags: [Inventory]
+      summary: Get products with low stock
       parameters:
         - name: threshold
           in: query
           required: true
+          description: Stock limit (Standard is 5 for Lab 3)
           schema:
             type: integer
-            default: 10
+            default: 5
       responses:
         '200':
           description: Low stock products retrieved
@@ -127,29 +148,85 @@ paths:
                 items:
                   $ref: '#/components/schemas/ProductResponseDTO'
 
+  /api/v1/product/inventory/movement:
+    post:
+      tags: [Inventory]
+      summary: Register inventory movement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MovementRequestDTO'
+      responses:
+        '201':
+          description: Movement registered successfully
+
+  /api/v1/product/{id}/inventory/movement:
+    post:
+      tags: [ Inventory Idempotente ]
+      summary: Register idempotent inventory movement
+      description: "Uses Idempotency-Key to prevent double stock deduction. The key must be generated as: category-productNumber-price (e.g. Electronics-101-1200.50)"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the product to update stock
+          schema:
+            type: integer
+            format: int64
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: "Unique key generated as: category-productNumber-price"
+          schema:
+            type: string
+            example: "Electronics-101-1200.50"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MovementRequestDTO'
+      responses:
+        '201':
+          description: "New transaction - Movement executed and idempotency_key registered"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponseDTO'
+        '200':
+          description: "Duplicate transaction - Key already exists, stock NOT modified"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponseDTO'
+        '400':
+          description: "Invalid data or missing Idempotency-Key header"
+
+
 components:
   schemas:
     ProductRequestDTO:
       type: object
-      required: [name, code, price, stock]
+      required: [name, code, category, price, stock]
       properties:
         name:
           type: string
           example: "Gaming Laptop"
         code:
           type: string
-          pattern: "^PROD-\\d{4}$"
           example: "PROD-1234"
+        category:
+          type: string
+          example: "Computers"
         price:
           type: number
-          format: float
+          format: double
           example: 1200.50
         stock:
           type: integer
           example: 50
-        description:
-          type: string
-          example: "High performance laptop"
 
     ProductResponseDTO:
       type: object
@@ -161,9 +238,24 @@ components:
           type: string
         code:
           type: string
+        category:
+          type: string
         price:
           type: number
+          format: double
         stock:
           type: integer
-        active:
-          type: boolean
+
+    MovementRequestDTO:
+      type: object
+      required: [productId, Idempotency-Key]
+      properties:
+        productId:
+          type: integer
+          description: "ID Product"
+          format: int64
+          example: 1
+        Idempotency-Key:
+          type: string
+          description: "Idempotency-Key"
+          example: Electronics-101-1200.50
