@@ -1,7 +1,7 @@
 openapi: 3.0.1
 info:
   title: MS-PRODUCTS API
-  description: Microservice for managing the product catalog - Lab 3
+  description: Microservice for managing the product catalog
   version: 1.2.0
 
 servers:
@@ -98,6 +98,14 @@ paths:
           schema:
             type: integer
             format: int64
+        - name: X-User-Role
+          in: header
+          required: true
+          description: Role of the user
+          schema:
+            type: string
+            enum: [ADMIN]
+            example: "ADMIN"
       requestBody:
         required: true
         content:
@@ -134,7 +142,7 @@ paths:
         - name: threshold
           in: query
           required: true
-          description: Stock limit (Standard is 5 for Lab 3)
+          description: Stock limit
           schema:
             type: integer
             default: 5
