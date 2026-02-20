@@ -4,15 +4,19 @@ import com.ms_products.client.UserClient;
 import com.ms_products.dto.ProductRequestDTO;
 import com.ms_products.dto.ProductResponseDTO;
 import com.ms_products.dto.UserResponseDTO;
+import com.ms_products.entity.InventoryIdempotencyEntity;
 import com.ms_products.entity.ProductEntity;
 import com.ms_products.exception.ProductNotFoundException;
 import com.ms_products.exception.UnauthorizedException;
 import com.ms_products.mapper.ProductMapper;
+import com.ms_products.repository.InventoryIdempotencyRepository;
 import com.ms_products.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -127,9 +131,7 @@ public class ProductServiceImpl implements ProductService {
      * @throws UnauthorizedException if the user lacks ADMIN role or if the user is not found.
      */
     private void checkAdminPrivileges(Long userId) {
-        //UserResponseDTO user = userClient.getUserById(userId);
-
-        UserResponseDTO user = new UserResponseDTO(userId, "UNKNOW");
+        UserResponseDTO user = userClient.getUserById(userId);
 
         // Fail-safe validation: Check for null response or incorrect role
         if (user == null || !ADMIN_ROLE.equalsIgnoreCase(user.getRole())) {
@@ -141,4 +143,45 @@ public class ProductServiceImpl implements ProductService {
 
         log.info("Authorization successful: User {} verified with role {}", userId, user.getRole());
     }
+
+
+    private final InventoryIdempotencyRepository idempotencyRepository;
+    @Transactional
+    public ResponseEntity<String> processInventoryMovement(Long productId, Integer quantity, ProductRequestDTO dto) {
+        // Generar la llave: CATEGORIA-CODIGO-PRECIO
+        String generatedKey = String.format("%s-%s-%s",
+                dto.getCategory().toUpperCase(),
+                dto.getCode(),
+                dto.getPrice());
+
+        // 1. Lógica: Si key ya existe -> NO modificar stock. Retornar 200.
+        var existingRecord = idempotencyRepository.findByIdempotencyKey(generatedKey);
+        if (existingRecord.isPresent()) {
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body("Key already exists. Stock NOT modified");
+        }
+
+        // 2. Si no existe: Buscar producto
+        ProductEntity product = productRepository.findById(productId)
+                .orElseThrow(() -> new ProductNotFoundException("Producto no encontrado"));
+
+        // 3. Ejecutar movimiento
+        product.setStock(product.getStock() + quantity);
+        productRepository.save(product);
+
+        // 4. Registrar idempotency_key
+        InventoryIdempotencyEntity record = InventoryIdempotencyEntity.builder()
+                .idempotencyKey(generatedKey)
+                .productId(productId)
+                .build();
+        idempotencyRepository.save(record);
+
+        // 5. Retornar 201 (Movement executed)
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body("Movement executed (New transaction)");
+    }
+
+
+
+
 }
