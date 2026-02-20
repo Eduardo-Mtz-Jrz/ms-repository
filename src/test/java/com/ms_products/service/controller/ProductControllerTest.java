@@ -128,4 +128,32 @@ class ProductControllerTest {
         mockMvc.perform(delete("/api/products/{id}", 1L))
                 .andExpect(status().isNoContent());
     }
+
+    // --- checkProductExistence ---
+
+    @Test
+    @DisplayName("GET /api/products/exists/{id} -> Returns 1 when product exists")
+    void checkProductExistence_ShouldReturnOne_WhenExists() throws Exception {
+        Long productId = 1L;
+        // Confirma la existencia
+        when(productService.existsById(productId)).thenReturn(true);
+
+        mockMvc.perform(get("/api/products/exists/{id}", productId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().string("1"));
+    }
+
+    @Test
+    @DisplayName("GET /api/products/exists/{id} -> Returns 0 when product does not exist")
+    void checkProductExistence_ShouldReturnZero_WhenNotExists() throws Exception {
+        Long productId = 99L;
+        // No encuentra el producto
+        when(productService.existsById(productId)).thenReturn(false);
+
+        mockMvc.perform(get("/api/products/exists/{id}", productId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().string("0"));
+    }
 }

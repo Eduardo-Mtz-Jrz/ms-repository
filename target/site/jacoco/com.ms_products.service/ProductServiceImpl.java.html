@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProductServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">ms-products</a> &gt; <a href="index.source.html" class="el_package">com.ms_products.service</a> &gt; <span class="el_source">ProductServiceImpl.java</span></div><h1>ProductServiceImpl.java</h1><pre class="source lang-java linenums">package com.ms_products.service;
+
+import com.ms_products.client.UserClient;
+import com.ms_products.dto.ProductRequestDTO;
+import com.ms_products.dto.ProductResponseDTO;
+import com.ms_products.dto.UserResponseDTO;
+import com.ms_products.entity.ProductEntity;
+import com.ms_products.exception.ProductNotFoundException;
+import com.ms_products.exception.UnauthorizedException;
+import com.ms_products.mapper.ProductMapper;
+import com.ms_products.repository.ProductRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+/**
+ * Implementation of {@link ProductService} for managing product lifecycle.
+ * Includes caching strategies and RBAC (Role-Based Access Control) validation.
+ *
+ * @author Angel Gabriel
+ * @version 1.2
+ */
+<span class="fc" id="L29">@Slf4j</span>
+@Service
+@RequiredArgsConstructor
+public class ProductServiceImpl implements ProductService {
+
+    private final ProductRepository productRepository;
+    private final UserClient userClient;
+    private final ProductMapper productMapper;
+
+    private static final String CACHE_VALUE = &quot;products&quot;;
+    private static final String ADMIN_ROLE = &quot;ADMIN&quot;;
+
+    @Override
+    @Transactional
+    public ProductResponseDTO save(ProductRequestDTO request) {
+<span class="fc" id="L44">        log.info(&quot;Process: Creating product with code: {}&quot;, request.getCode());</span>
+
+<span class="fc" id="L46">        productRepository.findByCode(request.getCode())</span>
+<span class="fc" id="L47">                .ifPresent(p -&gt; {</span>
+<span class="fc" id="L48">                    log.error(&quot;Conflict: Product code {} already exists&quot;, request.getCode());</span>
+<span class="fc" id="L49">                    throw new IllegalStateException(&quot;The product code is already registered in the system&quot;);</span>
+                });
+
+<span class="fc" id="L52">        ProductEntity entity = productMapper.toEntity(request);</span>
+<span class="fc" id="L53">        return productMapper.toDto(productRepository.save(entity));</span>
+    }
+
+    @Override
+    @Transactional
+    @CacheEvict(value = CACHE_VALUE, key = &quot;#id&quot;)
+    public ProductResponseDTO update(Long id, ProductRequestDTO request, Long userId) {
+<span class="fc" id="L60">        log.info(&quot;Process: Updating product ID: {} by User: {}&quot;, id, userId);</span>
+
+        // RBAC Validation
+<span class="fc" id="L63">        checkAdminPrivileges(userId);</span>
+
+<span class="fc" id="L65">        ProductEntity existingProduct = productRepository.findById(id)</span>
+<span class="fc" id="L66">                .orElseThrow(() -&gt; new ProductNotFoundException(id));</span>
+
+<span class="fc" id="L68">        productMapper.updateEntityFromDto(request, existingProduct);</span>
+<span class="fc" id="L69">        return productMapper.toDto(productRepository.save(existingProduct));</span>
+    }
+
+    @Override
+    @Transactional
+    @CacheEvict(value = CACHE_VALUE, key = &quot;#id&quot;)
+    public void delete(Long id) {
+<span class="fc" id="L76">        log.info(&quot;Process: Deleting product ID: {}&quot;, id);</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        if (!productRepository.existsById(id)) {</span>
+<span class="fc" id="L78">            throw new ProductNotFoundException(id);</span>
+        }
+<span class="fc" id="L80">        productRepository.deleteById(id);</span>
+<span class="fc" id="L81">    }</span>
+
+    @Override
+    @Transactional(readOnly = true)
+    @Cacheable(value = CACHE_VALUE, key = &quot;#id&quot;)
+    public ProductResponseDTO findById(Long id) {
+<span class="fc" id="L87">        log.debug(&quot;Database fetch for product ID: {}&quot;, id);</span>
+<span class="fc" id="L88">        return productRepository.findById(id)</span>
+<span class="fc" id="L89">                .map(productMapper::toDto)</span>
+<span class="fc" id="L90">                .orElseThrow(() -&gt; new ProductNotFoundException(id));</span>
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List&lt;ProductResponseDTO&gt; findAll() {
+<span class="fc" id="L96">        return productRepository.findAll().stream()</span>
+<span class="fc" id="L97">                .map(productMapper::toDto)</span>
+<span class="fc" id="L98">                .toList();</span>
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List&lt;ProductResponseDTO&gt; findLowStock(Integer threshold) {
+<span class="fc" id="L104">        log.info(&quot;Filtering products with stock below threshold: {}&quot;, threshold);</span>
+<span class="fc" id="L105">        return productRepository.findByStockLessThan(threshold).stream()</span>
+<span class="fc" id="L106">                .map(productMapper::toDto)</span>
+<span class="fc" id="L107">                .toList();</span>
+    }
+
+    /**
+     * Checks if a product exists in the database.
+     * This implementation provides a lightweight check to be used by the controller
+     * to return binary responses (1/0) instead of throwing exceptions.
+     *
+     * @param id Unique identifier of the product.
+     * @return true if the product exists, false otherwise.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public Boolean existsById(Long id) {
+<span class="fc" id="L121">        log.debug(&quot;Checking existence for product ID: {}&quot;, id);</span>
+<span class="fc" id="L122">        return productRepository.existsById(id);</span>
+    }
+
+    /**
+     * Validates if the user has administrative rights by comparing the retrieved role.
+     * @param userId The unique identifier of the user to verify.
+     * @throws UnauthorizedException if the user lacks ADMIN role or if the user is not found.
+     */
+    private void checkAdminPrivileges(Long userId) {
+        //UserResponseDTO user = userClient.getUserById(userId);
+
+<span class="fc" id="L133">        UserResponseDTO user = new UserResponseDTO(userId, &quot;ADMIN&quot;);</span>
+
+        // Fail-safe validation: Check for null response or incorrect role
+<span class="pc bpc" id="L136" title="2 of 4 branches missed.">        if (user == null || !ADMIN_ROLE.equalsIgnoreCase(user.getRole())) {</span>
+<span class="nc" id="L137">            log.warn(&quot;Security Alert: Unauthorized access attempt by user {}. Role found: {}&quot;,</span>
+<span class="nc bnc" id="L138" title="All 2 branches missed.">                    userId, (user != null ? user.getRole() : &quot;UNKNOWN&quot;));</span>
+
+<span class="nc" id="L140">            throw new UnauthorizedException(&quot;User lacks administrative permissions to perform this action&quot;);</span>
+        }
+
+<span class="fc" id="L143">        log.info(&quot;Authorization successful: User {} verified with role {}&quot;, userId, user.getRole());</span>
+<span class="fc" id="L144">    }</span>
+
+    @Override
+    @Transactional
+    public ResponseEntity&lt;String&gt; processInventoryMovement(Long productId, Integer quantity, ProductRequestDTO dto) {
+<span class="nc" id="L149">        log.info(&quot;Procesando movimiento de inventario para el producto ID: {}, Cantidad: {}&quot;, productId, quantity);</span>
+
+        // Buscamos el producto (esto ya aprovecha la cobertura de findById)
+<span class="nc" id="L152">        ProductEntity entity = productRepository.findById(productId)</span>
+<span class="nc" id="L153">                .orElseThrow(() -&gt; new ProductNotFoundException(productId));</span>
+
+        // Lógica de ejemplo: Actualizar stock
+<span class="nc" id="L156">        int newStock = entity.getStock() + quantity;</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">        if (newStock &lt; 0) {</span>
+<span class="nc" id="L158">            return ResponseEntity.badRequest().body(&quot;Stock insuficiente para realizar el movimiento&quot;);</span>
+        }
+
+<span class="nc" id="L161">        entity.setStock(newStock);</span>
+<span class="nc" id="L162">        productRepository.save(entity);</span>
+
+<span class="nc" id="L164">        return ResponseEntity.ok(&quot;Movimiento procesado exitosamente. Nuevo stock: &quot; + newStock);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

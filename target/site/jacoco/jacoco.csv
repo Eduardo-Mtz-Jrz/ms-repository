@@ -1,0 +1,5 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+ms-products,com.ms_products.client,UserClientFallback,0,17,0,0,0,4,0,3,0,3
+ms-products,com.ms_products.controller,ProductController,7,47,0,2,1,7,1,7,1,6
+ms-products,com.ms_products.mapper,ProductMapperImpl,0,100,0,6,0,28,0,7,0,4
+ms-products,com.ms_products.service,ProductServiceImpl,60,182,6,4,12,36,6,13,2,12

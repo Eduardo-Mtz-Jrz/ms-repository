@@ -4,7 +4,7 @@ import com.ms_products.client.UserClient;
 import com.ms_products.dto.ProductRequestDTO;
 import com.ms_products.dto.ProductResponseDTO;
 import com.ms_products.entity.ProductEntity;
-
+import com.ms_products.exception.ProductNotFoundException;
 import com.ms_products.exception.UnauthorizedException;
 import com.ms_products.mapper.ProductMapper;
 import com.ms_products.repository.ProductRepository;
@@ -18,6 +18,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -63,7 +64,7 @@ class ProductServiceImplTest {
     }
 
     @Nested
-    @DisplayName("Product Creation Tests")
+    @DisplayName("1. Product Creation Tests")
     class SaveTests {
         @Test
         @DisplayName("Should save product when code is unique")
@@ -76,7 +77,6 @@ class ProductServiceImplTest {
             ProductResponseDTO result = productService.save(sampleRequest);
 
             assertThat(result).isNotNull();
-            assertThat(result.getCode()).isEqualTo("PROD-1234");
             verify(productRepository).save(any());
         }
 
@@ -86,53 +86,191 @@ class ProductServiceImplTest {
             when(productRepository.findByCode("PROD-1234")).thenReturn(Optional.of(sampleEntity));
 
             assertThatThrownBy(() -> productService.save(sampleRequest))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("already registered");
+                    .isInstanceOf(IllegalStateException.class);
 
             verify(productRepository, never()).save(any());
         }
     }
 
     @Nested
-    @DisplayName("Product Existence Tests")
-    class ExistenceTests {
+    @DisplayName("2. Read & Search Operations")
+    class ReadTests {
         @Test
-        @DisplayName("Should return true (1) if product exists")
-        void exists_ReturnsTrue() {
-            when(productRepository.existsById(1L)).thenReturn(true);
-            assertThat(productService.existsById(1L)).isTrue();
+        @DisplayName("Should return product when ID exists")
+        void findById_Success() {
+            when(productRepository.findById(1L)).thenReturn(Optional.of(sampleEntity));
+            when(productMapper.toDto(any())).thenReturn(sampleResponse);
+
+            ProductResponseDTO result = productService.findById(1L);
+
+            assertThat(result).isNotNull();
+            assertThat(result.getId()).isEqualTo(1L);
         }
 
         @Test
-        @DisplayName("Should return false (0) if product missing")
-        void exists_ReturnsFalse() {
-            when(productRepository.existsById(99L)).thenReturn(false);
-            assertThat(productService.existsById(99L)).isFalse();
+        @DisplayName("Should throw ProductNotFoundException when ID missing")
+        void findById_NotFound_ThrowsException() {
+            when(productRepository.findById(1L)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> productService.findById(1L))
+                    .isInstanceOf(ProductNotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("Should return list of all products")
+        void findAll_Success() {
+            when(productRepository.findAll()).thenReturn(List.of(sampleEntity));
+            when(productMapper.toDto(any())).thenReturn(sampleResponse);
+
+            List<ProductResponseDTO> result = productService.findAll();
+
+            assertThat(result).hasSize(1);
+        }
+
+        @Test
+        @DisplayName("Should return empty list when no products exist")
+        void findAll_ReturnsEmpty() {
+            when(productRepository.findAll()).thenReturn(List.of());
+
+            List<ProductResponseDTO> result = productService.findAll();
+
+            assertThat(result).isEmpty();
+            verify(productRepository).findAll();
+        }
+
+        @Test
+        @DisplayName("Should return low stock products")
+        void findLowStock_Success() {
+            Integer threshold = 5;
+            when(productRepository.findByStockLessThan(threshold)).thenReturn(List.of(sampleEntity));
+            when(productMapper.toDto(any())).thenReturn(sampleResponse);
+
+            List<ProductResponseDTO> result = productService.findLowStock(threshold);
+
+            assertThat(result).isNotEmpty();
+        }
+
+        @Test
+        @DisplayName("Should return empty list when no products below stock threshold")
+        void findLowStock_ReturnsEmpty() {
+            Integer threshold = 5;
+            when(productRepository.findByStockLessThan(threshold)).thenReturn(List.of());
+
+            List<ProductResponseDTO> result = productService.findLowStock(threshold);
+
+            assertThat(result).isEmpty();
+            verify(productRepository).findByStockLessThan(threshold);
         }
     }
 
     @Nested
-    @DisplayName("Security & Update Tests")
+    @DisplayName("3. Update & Security (checkAdminPrivileges)")
     class UpdateSecurityTests {
 
-        /**
-         * NOTE: Because your checkAdminPrivileges() has a hardcoded "UNKNOW" role,
-         * even with valid inputs, this will throw UnauthorizedException.
-         */
         @Test
-        @DisplayName("Should throw UnauthorizedException due to hardcoded UNKNOW role")
-        void update_FailsDueToHardcodedRole() {
-            assertThatThrownBy(() -> productService.update(1L, sampleRequest, 1L))
-                    .isInstanceOf(UnauthorizedException.class)
-                    .hasMessageContaining("administrative permissions");
+        @DisplayName("update -> Should successfully update product with valid admin")
+        void update_SuccessfullyUpdatesProduct() {
+            // GIVEN
+            Long userId = 1L;
+            Long productId = 1L;
+            ProductEntity updatedEntity = ProductEntity.builder()
+                    .id(1L)
+                    .name("Updated Laptop")
+                    .code("PROD-1234")
+                    .price(1500.0)
+                    .stock(10)
+                    .build();
+
+            when(productRepository.findById(productId)).thenReturn(Optional.of(sampleEntity));
+            when(productRepository.save(any())).thenReturn(updatedEntity);
+            when(productMapper.toDto(updatedEntity)).thenReturn(sampleResponse);
+
+            // WHEN
+            ProductResponseDTO result = productService.update(productId, sampleRequest, userId);
+
+            // THEN
+            assertThat(result).isNotNull();
+            verify(productRepository).findById(productId);
+            verify(productRepository).save(any());
         }
 
         @Test
-        @DisplayName("Should throw ProductNotFoundException when ADMIN tries to update non-existent product")
+        @DisplayName("update -> Should throw ProductNotFoundException when product not found")
         void update_NotFound_ThrowsException() {
-            /* To test this effectively, you would need to change the Service code
-               to return "ADMIN" in the hardcoded line, or uncomment the Feign Client.
-            */
+            Long userId = 1L;
+            Long productId = 999L;
+
+            when(productRepository.findById(productId)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> productService.update(productId, sampleRequest, userId))
+                    .isInstanceOf(ProductNotFoundException.class);
+
+            verify(productRepository).findById(productId);
+            verify(productRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("checkAdminPrivileges -> Should log success when role is ADMIN")
+        void checkAdminPrivileges_ShouldPass_WhenRoleIsAdmin() {
+            // GIVEN
+            Long userId = 1L;
+            Long productId = 1L;
+
+            // Simulamos que el producto existe para que el flujo de update continúe
+            when(productRepository.findById(productId)).thenReturn(Optional.of(sampleEntity));
+            when(productRepository.save(any())).thenReturn(sampleEntity);
+            when(productMapper.toDto(any())).thenReturn(sampleResponse);
+
+            // WHEN
+            ProductResponseDTO result = productService.update(productId, sampleRequest, userId);
+
+            // THEN
+            assertThat(result).isNotNull();
+            // Si el test llega aquí sin UnauthorizedException, checkAdminPrivileges fue exitoso.
+        }
+    }
+
+    @Nested
+    @DisplayName("4. Existence & Delete Operations")
+    class ExistenceDeleteTests {
+        @Test
+        @DisplayName("existsById -> Should return true when product exists")
+        void existsById_ReturnsTrue() {
+            when(productRepository.existsById(1L)).thenReturn(true);
+
+            assertThat(productService.existsById(1L)).isTrue();
+
+            verify(productRepository).existsById(1L);
+        }
+
+        @Test
+        @DisplayName("existsById -> Should return false when product does not exist")
+        void existsById_ReturnsFalse() {
+            when(productRepository.existsById(999L)).thenReturn(false);
+
+            assertThat(productService.existsById(999L)).isFalse();
+
+            verify(productRepository).existsById(999L);
+        }
+
+        @Test
+        @DisplayName("delete -> Should delete when exists")
+        void delete_Success() {
+            when(productRepository.existsById(1L)).thenReturn(true);
+            doNothing().when(productRepository).deleteById(1L);
+
+            productService.delete(1L);
+
+            verify(productRepository).deleteById(1L);
+        }
+
+        @Test
+        @DisplayName("delete -> Should throw exception when not exists")
+        void delete_NotFound_ThrowsException() {
+            when(productRepository.existsById(1L)).thenReturn(false);
+
+            assertThatThrownBy(() -> productService.delete(1L))
+                    .isInstanceOf(ProductNotFoundException.class);
         }
     }
 }

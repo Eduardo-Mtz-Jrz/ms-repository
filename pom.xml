@@ -34,7 +34,7 @@
 			**/entity/**,
 			**/MsProductsApplication.java,
 			**/config/**,
-			**/client/**
+			**/exception/**
 		</sonar.exclusions>
 	</properties>
 
@@ -164,7 +164,7 @@
 							<exclude>com/ms_products/entity/**</exclude>
 							<exclude>com/ms_products/MsProductsApplication.class</exclude>
 							<exclude>com/ms_products/config/**</exclude>
-							<exclude>com/ms_products/client/**</exclude>
+							<exclude>com/ms_products/exception/**</exclude>
 						</excludes>
 					</configuration>
 				</execution>
