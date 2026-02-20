@@ -2,6 +2,7 @@ package com.ms_products.service;
 
 import com.ms_products.dto.ProductRequestDTO;
 import com.ms_products.dto.ProductResponseDTO;
+import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 
@@ -80,4 +81,7 @@ public interface ProductService {
      * @return {@code true} if the product exists, {@code false} otherwise.
      */
     Boolean existsById(Long id);
+
+    ResponseEntity<String> processInventoryMovement(Long productId, Integer quantity, ProductRequestDTO dto);
+
 }

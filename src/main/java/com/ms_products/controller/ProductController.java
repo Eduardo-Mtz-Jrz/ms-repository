@@ -106,4 +106,19 @@ public class ProductController {
         productService.delete(id);
         return ResponseEntity.noContent().build();
     }
+
+
+    @PostMapping("/{id}/inventario/movimiento")
+    public ResponseEntity<String> updateInventory(
+            @PathVariable Long id,
+            @RequestParam Integer quantity,
+            @RequestBody @Valid ProductRequestDTO productDto
+    ) {
+        return productService.processInventoryMovement(id, quantity, productDto);
+    }
+
+
+
+
+
 }
