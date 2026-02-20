@@ -19,6 +19,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.http.HttpResponse;
 import java.util.List;
 
 /**
@@ -38,9 +39,21 @@ public class ProductController {
 
     private final IProductService productService;
 
-    @PostMapping("/{id}/inventory/movegiement")
-    public ResponseEntity<RegisterOrderResponseDTO> registerOrder(@PathVariable(name = "id") Long id, @RequestBody MovementRequestDTO order){
-        return ResponseEntity.ok();
+    @PostMapping("/inventory/movegiement")
+    public ResponseEntity<String> registerOrder(@RequestBody MovementRequestDTO order){
+        RegisterOrderResponseDTO registerOrderResponseDTO = this.productService.registerOrder(order);
+        ResponseEntity<String> response;
+        switch (registerOrderResponseDTO.httpResponseStatus()){
+            case -1 -> response = ResponseEntity.status(HttpStatus.BAD_REQUEST).body(registerOrderResponseDTO.message());
+
+            case 0 -> response =  ResponseEntity.status(HttpStatus.OK).body(registerOrderResponseDTO.message());
+
+            case 1 -> response = ResponseEntity.status(HttpStatus.CREATED).body(registerOrderResponseDTO.message());
+
+            default ->
+                    throw new IllegalStateException("Unexpected value: " + registerOrderResponseDTO.httpResponseStatus());
+        }
+         return response;
     }
 
     @Operation(summary = "Retrieve all products", description = "Returns a complete list of products available in the system.")

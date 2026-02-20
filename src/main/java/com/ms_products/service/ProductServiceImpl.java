@@ -1,10 +1,7 @@
 package com.ms_products.service;
 
 import com.ms_products.client.UserClient;
-import com.ms_products.dto.MovementRequestDTO;
-import com.ms_products.dto.ProductRequestDTO;
-import com.ms_products.dto.ProductResponseDTO;
-import com.ms_products.dto.UserResponseDTO;
+import com.ms_products.dto.*;
 import com.ms_products.entity.InventoryIdempotencyEntity;
 import com.ms_products.entity.ProductEntity;
 import com.ms_products.exception.ProductNotFoundException;
@@ -58,7 +55,7 @@ public class ProductServiceImpl implements IProductService {
     }
 
     @Override
-    public Boolean registerOrder(MovementRequestDTO idempotenteRequestDTO) {
+    public RegisterOrderResponseDTO registerOrder(MovementRequestDTO idempotenteRequestDTO) {
         return null;
     }
 
