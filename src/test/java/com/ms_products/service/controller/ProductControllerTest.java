@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ms_products.controller.ProductController;
 import com.ms_products.dto.ProductRequestDTO;
 import com.ms_products.dto.ProductResponseDTO;
-import com.ms_products.service.ProductService;
+import com.ms_products.service.IProductService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -29,7 +29,7 @@ class ProductControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private ProductService productService;
+    private IProductService productService;
 
     @Autowired
     private ObjectMapper objectMapper;

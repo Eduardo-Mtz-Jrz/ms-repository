@@ -3,7 +3,8 @@ package com.ms_products.controller;
 import com.ms_products.dto.MovementRequestDTO;
 import com.ms_products.dto.ProductRequestDTO;
 import com.ms_products.dto.ProductResponseDTO;
-import com.ms_products.service.ProductService;
+import com.ms_products.dto.RegisterOrderResponseDTO;
+import com.ms_products.service.IProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -35,11 +36,11 @@ import java.util.List;
 @Tag(name = "Product Management", description = "Endpoints for managing the product catalog and stock levels")
 public class ProductController {
 
-    private final ProductService productService;
+    private final IProductService productService;
 
-    @PostMapping("/{id}/inventory/movement")
-    public ResponseEntity<Boolean> registerOrder(@PathVariable(name = "id") Long id,@RequestBody MovementRequestDTO order){
-        return ResponseEntity.ok(productService.registerOrder(order));
+    @PostMapping("/{id}/inventory/movegiement")
+    public ResponseEntity<RegisterOrderResponseDTO> registerOrder(@PathVariable(name = "id") Long id, @RequestBody MovementRequestDTO order){
+        return ResponseEntity.ok();
     }
 
     @Operation(summary = "Retrieve all products", description = "Returns a complete list of products available in the system.")

@@ -3,6 +3,7 @@ package com.ms_products.service;
 import com.ms_products.dto.MovementRequestDTO;
 import com.ms_products.dto.ProductRequestDTO;
 import com.ms_products.dto.ProductResponseDTO;
+import com.ms_products.dto.RegisterOrderResponseDTO;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
@@ -17,7 +18,7 @@ import java.util.List;
  * @author Angel Gabriel
  * @version 1.2
  */
-public interface ProductService {
+public interface IProductService {
 
     /**
      * Creates and persists a new product in the system.
@@ -27,7 +28,7 @@ public interface ProductService {
      */
     ProductResponseDTO save(ProductRequestDTO request);
 
-    Boolean registerOrder(MovementRequestDTO idempotenteRequestDTO);
+    RegisterOrderResponseDTO registerOrder(MovementRequestDTO idempotenteRequestDTO);
 
     /**
      * Updates an existing product's information.

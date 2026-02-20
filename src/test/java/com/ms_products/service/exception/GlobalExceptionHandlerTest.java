@@ -5,7 +5,7 @@ import com.ms_products.controller.ProductController;
 import com.ms_products.dto.ProductRequestDTO;
 import com.ms_products.exception.ProductNotFoundException;
 import com.ms_products.exception.UnauthorizedException;
-import com.ms_products.service.ProductService;
+import com.ms_products.service.IProductService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,7 +39,7 @@ class GlobalExceptionHandlerTest {
      * Mock of the product service to simulate exception scenarios.
      */
     @MockitoBean
-    private ProductService productService;
+    private IProductService productService;
 
     @Autowired
     private ObjectMapper objectMapper;

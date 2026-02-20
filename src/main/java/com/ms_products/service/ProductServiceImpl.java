@@ -24,7 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 /**
- * Implementation of {@link ProductService} for managing product lifecycle.
+ * Implementation of {@link IProductService} for managing product lifecycle.
  * Includes caching strategies and RBAC (Role-Based Access Control) validation.
  *
  * @author Angel Gabriel
@@ -33,7 +33,7 @@ import java.util.List;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ProductServiceImpl implements ProductService {
+public class ProductServiceImpl implements IProductService {
 
     private final ProductRepository productRepository;
     private final UserClient userClient;
